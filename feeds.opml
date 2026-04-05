@@ -1232,5 +1232,109 @@
       <outline text="Rust" title="Rust" type="rss" xmlUrl="https://blog.rust-lang.org/feed.xml" htmlUrl="http://blog.rust-lang.org/"/>
       <outline text="Swift" title="Swift" type="rss" xmlUrl="https://developer.apple.com/swift/blog/news.rss" htmlUrl="http://developer.apple.com/swift/blog/"/>
     </outline>
+    <outline text="AI &amp; ML Blogs" title="AI &amp; ML Blogs">
+      <outline text="OpenAI Blog" title="OpenAI Blog" type="rss" xmlUrl="https://openai.com/blog/rss.xml" htmlUrl="https://openai.com/blog"/>
+      <outline text="Perplexity Blog" title="Perplexity Blog" type="rss" xmlUrl="https://www.perplexity.ai/hub/blog/rss.xml" htmlUrl="https://www.perplexity.ai/hub/blog"/>
+      <outline text="Google DeepMind Blog" title="Google DeepMind Blog" type="rss" xmlUrl="https://deepmind.google/blog/rss.xml" htmlUrl="https://deepmind.google/blog"/>
+      <outline text="Google AI Blog" title="Google AI Blog" type="rss" xmlUrl="https://blog.research.google/feeds/posts/default" htmlUrl="https://blog.research.google"/>
+      <outline text="Hugging Face Blog" title="Hugging Face Blog" type="rss" xmlUrl="https://huggingface.co/blog/feed.xml" htmlUrl="https://huggingface.co/blog"/>
+      <outline text="Meta AI Blog" title="Meta AI Blog" type="rss" xmlUrl="https://ai.meta.com/blog/rss/" htmlUrl="https://ai.meta.com/blog"/>
+      <outline text="Microsoft Research Blog" title="Microsoft Research Blog" type="rss" xmlUrl="https://www.microsoft.com/en-us/research/feed/" htmlUrl="https://www.microsoft.com/en-us/research/blog"/>
+      <outline text="NVIDIA AI Blog" title="NVIDIA AI Blog" type="rss" xmlUrl="https://blogs.nvidia.com/feed/" htmlUrl="https://blogs.nvidia.com/blog/category/deep-learning-ai"/>
+      <outline text="Weights &amp; Biases Blog" title="Weights &amp; Biases Blog" type="rss" xmlUrl="https://wandb.ai/fully-connected/rss.xml" htmlUrl="https://wandb.ai/fully-connected"/>
+      <outline text="Cohere Blog" title="Cohere Blog" type="rss" xmlUrl="https://cohere.com/blog/rss" htmlUrl="https://cohere.com/blog"/>
+      <outline text="Mistral AI Blog" title="Mistral AI Blog" type="rss" xmlUrl="https://mistral.ai/news/rss.xml" htmlUrl="https://mistral.ai/news"/>
+      <outline text="LangChain Blog" title="LangChain Blog" type="rss" xmlUrl="https://blog.langchain.dev/rss/" htmlUrl="https://blog.langchain.dev"/>
+      <outline text="LlamaIndex Blog" title="LlamaIndex Blog" type="rss" xmlUrl="https://www.llamaindex.ai/blog/rss.xml" htmlUrl="https://www.llamaindex.ai/blog"/>
+      <outline text="Pinecone Blog" title="Pinecone Blog" type="rss" xmlUrl="https://www.pinecone.io/blog/rss.xml" htmlUrl="https://www.pinecone.io/blog"/>
+      <outline text="Weaviate Blog" title="Weaviate Blog" type="rss" xmlUrl="https://weaviate.io/blog/rss.xml" htmlUrl="https://weaviate.io/blog"/>
+      <outline text="Scale AI Blog" title="Scale AI Blog" type="rss" xmlUrl="https://scale.com/blog/feed.xml" htmlUrl="https://scale.com/blog"/>
+      <outline text="Together AI Blog" title="Together AI Blog" type="rss" xmlUrl="https://www.together.ai/blog/rss.xml" htmlUrl="https://www.together.ai/blog"/>
+      <outline text="Replicate Blog" title="Replicate Blog" type="rss" xmlUrl="https://replicate.com/blog/rss" htmlUrl="https://replicate.com/blog"/>
+      <outline text="Modal Blog" title="Modal Blog" type="rss" xmlUrl="https://modal.com/blog/feed.xml" htmlUrl="https://modal.com/blog"/>
+      <outline text="Lightning AI Blog" title="Lightning AI Blog" type="rss" xmlUrl="https://lightning.ai/blog/rss.xml" htmlUrl="https://lightning.ai/blog"/>
+      <outline text="Anyscale Blog" title="Anyscale Blog" type="rss" xmlUrl="https://www.anyscale.com/blog/rss.xml" htmlUrl="https://www.anyscale.com/blog"/>
+      <outline text="Qdrant Blog" title="Qdrant Blog" type="rss" xmlUrl="https://qdrant.tech/blog/rss.xml" htmlUrl="https://qdrant.tech/blog"/>
+      <outline text="Apple Machine Learning Research" title="Apple Machine Learning Research" type="rss" xmlUrl="https://machinelearning.apple.com/rss.xml" htmlUrl="https://machinelearning.apple.com"/>
+      <outline text="The Gradient" title="The Gradient" type="rss" xmlUrl="https://thegradient.pub/rss/" htmlUrl="https://thegradient.pub"/>
+      <outline text="Simon Willison's Weblog" title="Simon Willison's Weblog" type="rss" xmlUrl="https://simonwillison.net/atom/everything/" htmlUrl="https://simonwillison.net"/>
+    </outline>
+    <outline text="Top Tech Blogs" title="Top Tech Blogs">
+      <outline text="Google Engineering Blog" title="Google Engineering Blog" type="rss" xmlUrl="https://engineering.googleblog.com/feeds/posts/default" htmlUrl="https://engineering.googleblog.com"/>
+      <outline text="AWS Blog" title="AWS Blog" type="rss" xmlUrl="https://aws.amazon.com/blogs/aws/feed/" htmlUrl="https://aws.amazon.com/blogs/aws"/>
+      <outline text="AWS Architecture Blog" title="AWS Architecture Blog" type="rss" xmlUrl="https://aws.amazon.com/blogs/architecture/feed/" htmlUrl="https://aws.amazon.com/blogs/architecture"/>
+      <outline text="GitHub Engineering Blog" title="GitHub Engineering Blog" type="rss" xmlUrl="https://github.blog/engineering.atom" htmlUrl="https://github.blog/category/engineering"/>
+      <outline text="Figma Engineering Blog" title="Figma Engineering Blog" type="rss" xmlUrl="https://www.figma.com/blog/feed.xml" htmlUrl="https://www.figma.com/blog"/>
+      <outline text="Vercel Blog" title="Vercel Blog" type="rss" xmlUrl="https://vercel.com/blog/rss.xml" htmlUrl="https://vercel.com/blog"/>
+      <outline text="Datadog Engineering Blog" title="Datadog Engineering Blog" type="rss" xmlUrl="https://www.datadoghq.com/blog/engineering/feed.xml" htmlUrl="https://www.datadoghq.com/blog/engineering"/>
+      <outline text="Canva Engineering Blog" title="Canva Engineering Blog" type="rss" xmlUrl="https://www.canva.dev/blog/engineering/feed.xml" htmlUrl="https://www.canva.dev/blog/engineering"/>
+      <outline text="Grab Tech Blog" title="Grab Tech Blog" type="rss" xmlUrl="https://engineering.grab.com/feed.xml" htmlUrl="https://engineering.grab.com"/>
+      <outline text="Lyft Engineering Blog" title="Lyft Engineering Blog" type="rss" xmlUrl="https://eng.lyft.com/feed" htmlUrl="https://eng.lyft.com"/>
+      <outline text="DoorDash Engineering Blog" title="DoorDash Engineering Blog" type="rss" xmlUrl="https://doordash.engineering/blog/feed/" htmlUrl="https://doordash.engineering/blog"/>
+      <outline text="Squarespace Engineering" title="Squarespace Engineering" type="rss" xmlUrl="https://engineering.squarespace.com/blog?format=rss" htmlUrl="https://engineering.squarespace.com"/>
+      <outline text="Etsy Engineering" title="Etsy Engineering" type="rss" xmlUrl="https://www.etsy.com/codeascraft/rss/" htmlUrl="https://www.etsy.com/codeascraft"/>
+      <outline text="Twilio Engineering Blog" title="Twilio Engineering Blog" type="rss" xmlUrl="https://www.twilio.com/blog/rss.xml" htmlUrl="https://www.twilio.com/blog"/>
+      <outline text="Atlassian Engineering" title="Atlassian Engineering" type="rss" xmlUrl="https://www.atlassian.com/blog/feed" htmlUrl="https://www.atlassian.com/blog/technology"/>
+      <outline text="Elastic Blog" title="Elastic Blog" type="rss" xmlUrl="https://www.elastic.co/blog/feed" htmlUrl="https://www.elastic.co/blog"/>
+      <outline text="Confluent Blog" title="Confluent Blog" type="rss" xmlUrl="https://www.confluent.io/blog/feed/" htmlUrl="https://www.confluent.io/blog"/>
+      <outline text="Cockroach Labs Blog" title="Cockroach Labs Blog" type="rss" xmlUrl="https://www.cockroachlabs.com/blog/index.xml" htmlUrl="https://www.cockroachlabs.com/blog"/>
+      <outline text="PlanetScale Blog" title="PlanetScale Blog" type="rss" xmlUrl="https://planetscale.com/blog/rss.xml" htmlUrl="https://planetscale.com/blog"/>
+      <outline text="Fly.io Blog" title="Fly.io Blog" type="rss" xmlUrl="https://fly.io/blog/feed.xml" htmlUrl="https://fly.io/blog"/>
+      <outline text="Tailscale Blog" title="Tailscale Blog" type="rss" xmlUrl="https://tailscale.com/blog/index.xml" htmlUrl="https://tailscale.com/blog"/>
+      <outline text="Fastly Blog" title="Fastly Blog" type="rss" xmlUrl="https://www.fastly.com/blog/feed" htmlUrl="https://www.fastly.com/blog"/>
+      <outline text="Asana Engineering" title="Asana Engineering" type="rss" xmlUrl="https://blog.asana.com/feed/" htmlUrl="https://blog.asana.com/category/eng"/>
+      <outline text="Zendesk Engineering" title="Zendesk Engineering" type="rss" xmlUrl="https://zendesk.engineering/feed" htmlUrl="https://zendesk.engineering"/>
+      <outline text="Mercari Engineering" title="Mercari Engineering" type="rss" xmlUrl="https://engineering.mercari.com/blog/feed.xml" htmlUrl="https://engineering.mercari.com/blog"/>
+      <outline text="Monzo Blog" title="Monzo Blog" type="rss" xmlUrl="https://monzo.com/blog/feed" htmlUrl="https://monzo.com/blog"/>
+      <outline text="Deliveroo Engineering" title="Deliveroo Engineering" type="rss" xmlUrl="https://deliveroo.engineering/feed.xml" htmlUrl="https://deliveroo.engineering"/>
+      <outline text="The Pragmatic Engineer" title="The Pragmatic Engineer" type="rss" xmlUrl="https://newsletter.pragmaticengineer.com/feed" htmlUrl="https://newsletter.pragmaticengineer.com"/>
+      <outline text="ByteByteGo Newsletter" title="ByteByteGo Newsletter" type="rss" xmlUrl="https://blog.bytebytego.com/feed" htmlUrl="https://blog.bytebytego.com"/>
+      <outline text="Overreacted (Dan Abramov)" title="Overreacted (Dan Abramov)" type="rss" xmlUrl="https://overreacted.io/rss.xml" htmlUrl="https://overreacted.io"/>
+      <outline text="High Scalability" title="High Scalability" type="rss" xmlUrl="http://feeds.feedburner.com/HighScalability" htmlUrl="http://highscalability.com"/>
+      <outline text="ACM Queue" title="ACM Queue" type="rss" xmlUrl="https://queue.acm.org/rss/feeds/queuecontent.xml" htmlUrl="https://queue.acm.org"/>
+      <outline text="Hillel Wayne" title="Hillel Wayne" type="rss" xmlUrl="https://buttondown.com/hillelwayne/rss" htmlUrl="https://buttondown.com/hillelwayne"/>
+      <outline text="Eric Lippert" title="Eric Lippert" type="rss" xmlUrl="https://ericlippert.com/feed/" htmlUrl="https://ericlippert.com"/>
+      <outline text="Brendan Gregg's Blog" title="Brendan Gregg's Blog" type="rss" xmlUrl="https://www.brendangregg.com/blog/rss.xml" htmlUrl="https://www.brendangregg.com/blog"/>
+      <outline text="Antirez" title="Antirez" type="rss" xmlUrl="http://antirez.com/rss" htmlUrl="http://antirez.com"/>
+      <outline text="The Old New Thing (Raymond Chen)" title="The Old New Thing (Raymond Chen)" type="rss" xmlUrl="https://devblogs.microsoft.com/oldnewthing/feed/" htmlUrl="https://devblogs.microsoft.com/oldnewthing"/>
+      <outline text="Architecture Notes" title="Architecture Notes" type="rss" xmlUrl="https://architecturenotes.co/rss/" htmlUrl="https://architecturenotes.co"/>
+      <outline text="System Design Newsletter" title="System Design Newsletter" type="rss" xmlUrl="https://newsletter.systemdesign.one/feed" htmlUrl="https://newsletter.systemdesign.one"/>
+      <outline text="Supabase Blog" title="Supabase Blog" type="rss" xmlUrl="https://supabase.com/rss.xml" htmlUrl="https://supabase.com/blog"/>
+      <outline text="Neon Database Blog" title="Neon Database Blog" type="rss" xmlUrl="https://neon.tech/blog/rss.xml" htmlUrl="https://neon.tech/blog"/>
+      <outline text="Oxide Computer Blog" title="Oxide Computer Blog" type="rss" xmlUrl="https://oxide.computer/blog/feed.xml" htmlUrl="https://oxide.computer/blog"/>
+      <outline text="Crunchy Data Blog" title="Crunchy Data Blog" type="rss" xmlUrl="https://www.crunchydata.com/blog/rss.xml" htmlUrl="https://www.crunchydata.com/blog"/>
+      <outline text="Turso Blog" title="Turso Blog" type="rss" xmlUrl="https://turso.tech/blog/rss.xml" htmlUrl="https://turso.tech/blog"/>
+      <outline text="Deno Blog" title="Deno Blog" type="rss" xmlUrl="https://deno.com/feed.xml" htmlUrl="https://deno.com/blog"/>
+      <outline text="Bun Blog" title="Bun Blog" type="rss" xmlUrl="https://bun.sh/blog/feed.xml" htmlUrl="https://bun.sh/blog"/>
+      <outline text="Zed Blog" title="Zed Blog" type="rss" xmlUrl="https://zed.dev/blog/feed.xml" htmlUrl="https://zed.dev/blog"/>
+      <outline text="Linear Blog" title="Linear Blog" type="rss" xmlUrl="https://linear.app/blog/feed.xml" htmlUrl="https://linear.app/blog"/>
+      <outline text="Sourcegraph Blog" title="Sourcegraph Blog" type="rss" xmlUrl="https://about.sourcegraph.com/blog/feed.xml" htmlUrl="https://about.sourcegraph.com/blog"/>
+      <outline text="PostHog Blog" title="PostHog Blog" type="rss" xmlUrl="https://posthog.com/blog/rss.xml" htmlUrl="https://posthog.com/blog"/>
+      <outline text="Sentry Blog" title="Sentry Blog" type="rss" xmlUrl="https://blog.sentry.io/feed/" htmlUrl="https://blog.sentry.io"/>
+      <outline text="Temporal Blog" title="Temporal Blog" type="rss" xmlUrl="https://temporal.io/blog/rss.xml" htmlUrl="https://temporal.io/blog"/>
+      <outline text="Retool Engineering" title="Retool Engineering" type="rss" xmlUrl="https://retool.com/blog/feed.xml" htmlUrl="https://retool.com/blog"/>
+      <outline text="Val Town Blog" title="Val Town Blog" type="rss" xmlUrl="https://blog.val.town/rss.xml" htmlUrl="https://blog.val.town"/>
+      <outline text="Render Blog" title="Render Blog" type="rss" xmlUrl="https://render.com/blog/rss.xml" htmlUrl="https://render.com/blog"/>
+      <outline text="Teleport Blog" title="Teleport Blog" type="rss" xmlUrl="https://goteleport.com/blog/feed.xml" htmlUrl="https://goteleport.com/blog"/>
+      <outline text="1Password Blog" title="1Password Blog" type="rss" xmlUrl="https://blog.1password.com/rss/" htmlUrl="https://blog.1password.com"/>
+      <outline text="PagerDuty Engineering" title="PagerDuty Engineering" type="rss" xmlUrl="https://www.pagerduty.com/eng/feed/" htmlUrl="https://www.pagerduty.com/eng"/>
+      <outline text="Pointer.io" title="Pointer.io" type="rss" xmlUrl="https://www.pointer.io/feed.xml" htmlUrl="https://www.pointer.io"/>
+      <outline text="Console.dev" title="Console.dev" type="rss" xmlUrl="https://console.dev/rss.xml" htmlUrl="https://console.dev"/>
+      <outline text="TLDR Newsletter" title="TLDR Newsletter" type="rss" xmlUrl="https://tldr.tech/rss.xml" htmlUrl="https://tldr.tech"/>
+      <outline text="The Register" title="The Register" type="rss" xmlUrl="https://www.theregister.com/headlines.atom" htmlUrl="https://www.theregister.com"/>
+      <outline text="Increment Magazine" title="Increment Magazine" type="rss" xmlUrl="https://increment.com/feed.xml" htmlUrl="https://increment.com"/>
+      <outline text="Grafana Blog" title="Grafana Blog" type="rss" xmlUrl="https://grafana.com/blog/index.xml" htmlUrl="https://grafana.com/blog"/>
+      <outline text="DigitalOcean Blog" title="DigitalOcean Blog" type="rss" xmlUrl="https://www.digitalocean.com/blog/feed" htmlUrl="https://www.digitalocean.com/blog"/>
+      <outline text="Hetzner Blog" title="Hetzner Blog" type="rss" xmlUrl="https://www.hetzner.com/blog.rss" htmlUrl="https://www.hetzner.com/blog"/>
+      <outline text="Prisma Blog" title="Prisma Blog" type="rss" xmlUrl="https://www.prisma.io/blog/rss.xml" htmlUrl="https://www.prisma.io/blog"/>
+      <outline text="Drizzle Blog" title="Drizzle Blog" type="rss" xmlUrl="https://orm.drizzle.team/rss.xml" htmlUrl="https://orm.drizzle.team/blog"/>
+      <outline text="Railway Blog" title="Railway Blog" type="rss" xmlUrl="https://blog.railway.com/rss.xml" htmlUrl="https://blog.railway.com"/>
+      <outline text="Turbopack Blog" title="Turbopack Blog" type="rss" xmlUrl="https://turbo.build/blog/feed.xml" htmlUrl="https://turbo.build/blog"/>
+      <outline text="Astro Blog" title="Astro Blog" type="rss" xmlUrl="https://astro.build/rss.xml" htmlUrl="https://astro.build/blog"/>
+      <outline text="SolidJS Blog" title="SolidJS Blog" type="rss" xmlUrl="https://www.solidjs.com/blog/feed.xml" htmlUrl="https://www.solidjs.com/blog"/>
+      <outline text="Svelte Blog" title="Svelte Blog" type="rss" xmlUrl="https://svelte.dev/blog/rss.xml" htmlUrl="https://svelte.dev/blog"/>
+      <outline text="Remix Blog" title="Remix Blog" type="rss" xmlUrl="https://remix.run/blog/rss.xml" htmlUrl="https://remix.run/blog"/>
+      <outline text="Clerk Blog" title="Clerk Blog" type="rss" xmlUrl="https://clerk.com/blog/rss.xml" htmlUrl="https://clerk.com/blog"/>
+    </outline>
   </body>
 </opml>
