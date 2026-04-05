@@ -27,6 +27,7 @@
       <outline text="Agile Training - RGalen Consulting" title="Agile Training - RGalen Consulting" type="rss" xmlUrl="https://rgalen.com/agile-training-news?format=rss" htmlUrl="https://rgalen.com/agile-training-news/"/>
     </outline>
     <outline text="Leadership" title="Leadership">
+      <outline text="Human-Centered Change and Innovation" title="Human-Centered Change and Innovation" type="rss" xmlUrl="https://bradenkelley.com/feed/" htmlUrl="https://bradenkelley.com"/>
       <outline text="LeadDev" title="LeadDev" type="rss" xmlUrl="https://leaddev.com/content-piece-and-series/rss.xml" htmlUrl="https://leaddev.com/"/>
       <outline text="Innovation Excellence" title="Innovation Excellence" type="rss" xmlUrl="https://feeds.feedburner.com/business-strategy-innovation" htmlUrl="https://www.innovationexcellence.com/blog"/>
       <outline text="Character Lab" title="Character Lab" type="rss" xmlUrl="https://characterlab.org/feed/" htmlUrl="https://characterlab.org/"/>
