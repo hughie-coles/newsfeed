@@ -1,300 +1,294 @@
-import json, html, re
-from datetime import datetime, timezone
+#!/usr/bin/env python3
+"""Build daily digest HTML from JSON feed data with AI-generated summaries."""
 
-DATE = "2026-04-06"
+import argparse
+import json
+import os
+import sys
+from datetime import datetime
+from html import escape
+from pathlib import Path
 
-with open(f"{DATE}.json") as f:
-    data = json.load(f)
+import anthropic
 
-stats = data["stats"]
-cats = data["categories"]
-overflow = data.get("overflow", {})
+CATEGORY_COLORS = [
+    "#4f46e5",  # indigo
+    "#0891b2",  # cyan
+    "#059669",  # emerald
+    "#d97706",  # amber
+    "#dc2626",  # red
+    "#7c3aed",  # violet
+    "#db2777",  # pink
+    "#ea580c",  # orange
+]
 
-# ── AI-generated summaries (title + excerpt → 1-2 sentences) ──────────────
-SUMMARIES = {
-    # Leadership
-    "https://bradenkelley.com/2026/04/misunderstanding-big-ideas-is-very-dangerous/":
-        "Greg Satell examines how dangerously misinterpreting major intellectual frameworks—like Fukuyama's \"End of History\"—leads organisations to make fatally flawed strategic decisions. The article warns that superficially adopting big ideas without true understanding can be more harmful than ignorance.",
 
-    # Politics
-    "https://www.journalofdemocracy.org/online-exclusive/why-viktor-orban-is-in-trouble/":
-        "A series of unforced errors, poor governance results, and the emergence of a credible opposition are threatening Viktor Orbán's grip on Hungary. The piece extracts wider lessons about the conditions under which illiberal leaders can be successfully defeated.",
+def cat_color(i):
+    return CATEGORY_COLORS[i % len(CATEGORY_COLORS)]
 
-    # Agile
-    "https://bobgalen.substack.com/p/lazy-strategy-lazy-hiring-lazy-leadership":
-        "Bob Galen argues that the wave of mass tech layoffs at companies like Amazon, Meta, and Oracle reflects a failure of leadership strategy rather than genuine restructuring. He connects undisciplined headcount growth to lazy strategy and ultimately lazy leadership.",
 
-    # Engineering
-    "https://www.red-gate.com/simple-talk/development/syntax-and-data-structures-in-esproc-spl-a-complete-guide/":
-        "A comprehensive guide to esProc SPL's core syntax and its table-based data structures, aimed at developers transitioning from Python. Covers SPL's primary data structure and common analytical operations.",
+def cat_id(cat):
+    return cat.lower().replace(" ", "-").replace("/", "-")
 
-    "https://world.hey.com/dhh/panther-lake-is-the-real-deal-4bd731f1":
-        "DHH reports impressive real-world numbers from Intel's Panther Lake chip in the Dell XPS 14—idle power as low as 1.4W and up to 47+ hours of theoretical battery life. He considers it a massive leap over the AMD-powered Framework laptops he's used for the past two years.",
 
-    "https://linuxblog.io/linux-server-diy-projects-for-beginners/":
-        "A practical guide introducing Linux newcomers to hands-on server projects spanning virtualisation, server management, and security. Designed to build real Linux skills through experimentation rather than theory alone.",
+def format_date(generated_at):
+    """Parse generated_at from JSON and return a readable date string like 'Monday, April 7, 2026'."""
+    try:
+        dt = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        # Fallback: try just date portion
+        try:
+            dt = datetime.strptime(generated_at[:10], "%Y-%m-%d")
+        except Exception:
+            return generated_at
+    return dt.strftime("%A, %B %-d, %Y")
 
-    "http://softwaredoug.com/blog/2026/04/06/agentic-search-is-having-a-grep-moment.html":
-        "Doug Turnbull explores whether plain grep can power agentic AI search, concluding it's technically feasible but far from trivial. The post reflects on the trade-offs between simplicity and sophistication when building retrieval for autonomous agents.",
 
-    "https://www.poppastring.com/blog/three-new-mai-models":
-        "Microsoft announced three new MAI (Microsoft AI) models, expanding its lineup of AI language models available to enterprise and developer audiences.",
+def get_summary(client, title, excerpt):
+    """Call Claude Haiku to generate a 1-2 sentence summary."""
+    prompt = (
+        "Given this article title and excerpt, write 1-2 sentences that tell the reader "
+        "WHY they might want to click through — what is interesting or notable about this piece. "
+        "Be specific and compelling, not generic. Write only the summary, no preamble.\n\n"
+        f"Title: {title}\nExcerpt: {excerpt[:500]}"
+    )
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=150,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return msg.content[0].text.strip()
 
-    "https://devblogs.microsoft.com/agent-framework/microsoft-agent-framework-version-1-0/":
-        "Microsoft released v1.0 of its Agent Framework, providing a stable foundation for developers building AI-agent applications on the Microsoft platform.",
 
-    "https://jeremydmiller.com/2026/04/03/wolverine-gap-analysis/":
-        "Jeremy Miller performs a gap analysis of the Wolverine messaging and command-bus framework for .NET, identifying areas for improvement or missing functionality in the current release.",
+def build_html(data, summaries_by_category, display_date):
+    stats = data["stats"]
+    categories = data["categories"]
+    overflow = data.get("overflow", {})
 
-    "https://devblogs.microsoft.com/oldnewthing/20260403-00/?p=112202":
-        "Raymond Chen explains how to use the Windows ReadDirectoryChangesW API to detect when files are being copied out of a directory, addressing a nuanced edge case in file-system monitoring.",
+    total_items = sum(len(v) for v in categories.values())
+    cat_count = len(categories)
+    feeds_checked = stats["total_feeds"]
+    feeds_errored = stats["feeds_errored"]
+    generated_at = data.get("generated_at", "")
 
-    "https://www.simplethread.com/building-a-ux-research-brain-atomic-research-zettelkasten-and-obsidian/":
-        "The article tackles \"Research Amnesia\"—the recurring loss of past user research insights in product teams—by proposing a system combining Atomic Research methodology with a Zettelkasten approach in Obsidian. The result is a persistent, searchable UX knowledge base that survives team and project turnover.",
+    # --- TOC pills ---
+    toc_pills = ""
+    for i, cat in enumerate(categories.keys()):
+        color = cat_color(i)
+        anchor = cat_id(cat)
+        count = len(categories[cat])
+        toc_pills += (
+            f'<a href="#{escape(anchor)}" style="display:inline-block;padding:5px 14px;'
+            f'border-radius:20px;background:{color};color:#fff;text-decoration:none;'
+            f'font-size:13px;font-weight:500;margin:4px 4px 4px 0;">'
+            f'{escape(cat)} ({count})</a>\n'
+        )
 
-    "https://devblogs.microsoft.com/aspire/aspire-docs-in-your-terminal/":
-        "Covers how to surface .NET Aspire documentation directly in your terminal and feed it into AI coding assistants, keeping developers in-flow without switching to a browser.",
+    # --- Category sections ---
+    sections_html = ""
+    for i, (cat, items) in enumerate(categories.items()):
+        color = cat_color(i)
+        anchor = cat_id(cat)
 
-    "https://devblogs.microsoft.com/azure-sdk/azure-developer-cli-azd-march-2026/":
-        "The March 2026 Azure Developer CLI update adds local run-and-debug support for AI agents, tighter GitHub Copilot integration, and Container App Jobs support—streamlining AI development and deployment workflows on Azure.",
+        items_html = ""
+        for j, item in enumerate(items):
+            title = item.get("title", "Untitled")
+            link = item.get("link", "#")
+            feed_name = item.get("feed_name", "")
+            pub_date = item.get("published", "")
+            summary = summaries_by_category.get(cat, {}).get(title, "")
 
-    "https://dirkstrauss.com/claude-code-windows-migration-guide/":
-        "A step-by-step guide for migrating a complete Claude Code setup—MCP servers, slash commands, plugins, and access rules—to a new Windows machine. Addresses the common pain of losing configuration files during hardware upgrades.",
+            # Date formatting for individual items
+            date_str = ""
+            if pub_date:
+                try:
+                    dt = datetime.fromisoformat(pub_date.replace("Z", "+00:00"))
+                    date_str = dt.strftime("%b %-d")
+                except Exception:
+                    date_str = pub_date[:10] if len(pub_date) >= 10 else pub_date
 
-    "https://www.bennadel.com/blog/4884-unified-coldfusion-custom-tag-traversal-in-cfml-engines.htm":
-        "Ben Nadel demonstrates a unified technique for traversing the ColdFusion custom tag stack across Adobe ColdFusion, Lucee, and BoxLang, carefully handling the platform-specific quirks of each engine.",
+            meta_parts = []
+            if feed_name:
+                meta_parts.append(escape(feed_name))
+            if date_str:
+                meta_parts.append(escape(date_str))
+            meta_line = " &middot; ".join(meta_parts)
 
-    # Engineering Blogs
-    "https://www.tigerdata.com/blog/how-hardware-affects-iiot-workloads":
-        "Explores how RAM, storage, and CPU choices directly affect the three-constraint IIoT performance envelope (storage capacity, ingest rate, query speed). Shows how doubling hardware resources can shift what workloads a database can comfortably handle.",
+            border_bottom = "border-bottom:1px solid #f0f2f5;" if j < len(items) - 1 else ""
 
-    "https://realpython.com/quizzes/for-loop-python/":
-        "An interactive quiz from Real Python testing knowledge of Python for-loops, including iterables, iterators, set iteration order, and the behaviour of break and continue.",
+            items_html += (
+                f'<div style="padding:14px 20px 14px 24px;border-left:4px solid {color};{border_bottom}">'
+                f'<a href="{escape(link)}" target="_blank" rel="noopener" '
+                f'style="display:block;font-weight:600;font-size:15px;color:#1a1a2e;text-decoration:none;margin-bottom:3px;">'
+                f'{escape(title)}</a>'
+                f'<div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">{meta_line}</div>'
+                f'<div style="font-size:14px;color:#4b5563;line-height:1.55;">{escape(summary)}</div>'
+                f'</div>'
+            )
 
-    "https://blogs.windows.com/windows-insider/2026/04/03/announcing-windows-11-insider-preview-build-26220-8148-beta-channel/":
-        "Microsoft released Windows 11 Insider Preview Build 26220.8148 to the Beta Channel, delivering incremental fixes and improvements ahead of broader rollout.",
+        overflow_note = ""
+        if cat in overflow:
+            n = overflow[cat]
+            overflow_note = (
+                f'<div style="padding:10px 20px;font-size:13px;color:#6b7280;font-style:italic;'
+                f'border-top:1px dashed #e0e0e0;background:#fafafa;">'
+                f'+{n} more items not shown</div>'
+            )
 
-    "https://blogs.windows.com/windows-insider/2026/04/03/announcing-windows-11-insider-preview-build-26300-8155-dev-channel/":
-        "Build 26300.8155 arrives in the Dev Channel, giving Windows Insiders early access to features and changes currently under active development.",
+        sections_html += (
+            f'<table cellpadding="0" cellspacing="0" border="0" width="100%" '
+            f'style="background:#fff;border-radius:8px;margin-bottom:20px;'
+            f'box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden;">'
+            f'<tr><td id="{escape(anchor)}" style="background:{color};padding:14px 20px;'
+            f'font-size:16px;font-weight:700;color:#fff;">'
+            f'{escape(cat)}'
+            f'<span style="font-size:12px;font-weight:500;opacity:0.85;'
+            f'background:rgba(255,255,255,0.2);padding:2px 9px;border-radius:999px;'
+            f'margin-left:10px;">{len(items)} items</span>'
+            f'</td></tr>'
+            f'<tr><td style="padding:0;">{items_html}</td></tr>'
+            f'{f"<tr><td>{overflow_note}</td></tr>" if overflow_note else ""}'
+            f'</table>\n'
+        )
 
-    "https://blogs.windows.com/windows-insider/2026/04/03/announcing-windows-11-insider-preview-build-for-canary-channel-29560-1000/":
-        "Build 29560.1000 lands in the Canary Channel—the most experimental Windows Insider ring—previewing cutting-edge changes furthest from general availability.",
-
-    "https://blogs.windows.com/windows-insider/2026/04/03/announcing-windows-11-insider-preview-build-28020-1803-canary-channel/":
-        "Another Canary Channel release (28020.1803), continuing Microsoft's rapid experimental iteration cycle for the most adventurous Windows testers.",
-
-    "https://blog.jetbrains.com/rust/2026/04/03/rustrover-2026-1-professional-testing-with-native-cargo-nextest-integration/":
-        "JetBrains released RustRover 2026.1 with native cargo-nextest integration, bringing a professional-grade, fast test runner experience directly into the Rust IDE.",
-
-    # AI & ML Blogs
-    "https://www.microsoft.com/en-us/microsoft-copilot/blog/copilot-studio/new-and-improved-multi-agent-orchestration-connected-experiences-and-faster-prompt-iteration/":
-        "Microsoft announced Copilot Studio updates featuring enhanced multi-agent orchestration, improved connected-experience integrations, and faster prompt iteration tooling for enterprise AI developers.",
-
-    "https://simonwillison.net/2026/Apr/3/cognitive-cost/#atom-everything":
-        "Simon Willison explores how AI coding agents affect developer cognition, examining both the cognitive offloading benefits and the subtler risks of increasingly autonomous code generation.",
-
-    "https://simonwillison.net/2026/Apr/3/supply-chain-social-engineering/#atom-everything":
-        "An analysis of a supply chain attack targeting the Axios JavaScript library, notable for using individually crafted social engineering rather than bulk phishing—making it significantly harder to detect.",
-
-    "https://simonwillison.net/2026/Apr/6/google-ai-edge-gallery/#atom-everything":
-        "Simon Willison reviews Google's AI Edge Gallery iPhone app, which runs Gemma 4 models fully on-device. The compact E2B model (2.54 GB) is fast and capable, supporting image Q&A and 30-second audio transcription.",
-
-    "https://simonwillison.net/2026/Apr/6/datasette-ports-2/#atom-everything":
-        "datasette-ports 0.2 removes the hard dependency on a full Datasette install—it can now run standalone via uvx—while continuing to work as an optional Datasette plugin.",
-
-    "https://simonwillison.net/2026/Apr/6/scan-for-secrets/#atom-everything":
-        "scan-for-secrets 0.3 adds a --redact option that interactively confirms matches and replaces them with \"REDACTED\" in files, plus a new Python API for programmatic redaction.",
-
-    "https://simonwillison.net/2026/Apr/6/cleanup-claude-code-paste/#atom-everything":
-        "A small utility that removes the extra whitespace artifacts produced when copying prompts from the Claude Code terminal app—solving a niche but persistent formatting annoyance.",
-
-    "https://openai.com/index/industrial-policy-for-the-intelligence-age":
-        "OpenAI outlines its vision for people-first industrial policy in the AI era, focusing on expanding economic opportunity, sharing AI-generated prosperity broadly, and building resilient institutions to manage the transition to advanced AI.",
-
-    "https://simonwillison.net/2026/Apr/6/datasette-ports/#atom-everything":
-        "The initial release of datasette-ports, a tool Simon Willison built to track and list all running Datasette instances across terminal windows—solving his personal problem of losing them in a sea of sessions.",
-
-    "https://simonwillison.net/2026/Apr/5/building-with-ai/#atom-everything":
-        "Lalit Maganti's long-form account of building syntaqlite—a comprehensive SQLite linting and verification tool—describes how AI assistance compressed eight years of wanting the project into three months of actual construction. Simon Willison calls it one of the best pieces of long-form agentic engineering writing he's read.",
-
-    "https://simonwillison.net/2026/Apr/5/chengpeng-mou/#atom-everything":
-        "Shares anonymised ChatGPT usage data from OpenAI's Head of Business Finance: ~2M weekly messages on health insurance and ~600K healthcare messages from people in hospital deserts, with 70% occurring outside clinic hours—highlighting AI's emerging role as a healthcare access point.",
-
-    "https://blog.langchain.com/continual-learning-for-ai-agents/":
-        "LangChain argues that AI agent learning should be understood across three distinct layers—model weights, the agent harness, and context—rather than focusing solely on fine-tuning. This reframe changes how developers should architect systems that genuinely improve over time.",
-
-    "https://simonwillison.net/2026/Apr/5/syntaqlite/#atom-everything":
-        "Simon Willison compiled Lalit Maganti's syntaqlite SQLite linter to WebAssembly via Pyodide and wrapped it in a browser playground, making the tool instantly accessible without any installation.",
-
-    # Top Tech Blogs
-    "https://github.blog/engineering/architecture-optimization/the-uphill-climb-of-making-diff-lines-performant/":
-        "GitHub's engineering team documents the iterative challenges of making diff-line rendering fast at scale, covering architecture decisions, profiling findings, and the performance bottlenecks they overcame.",
-
-    "https://go.theregister.com/feed/www.theregister.com/2026/04/06/windows_asks_a_networking_question/":
-        "The Register's Bork!Bork!Bork! column covers a Windows network-connectivity dialog that escaped onto a public billboard in Stratford—a colourful reminder that public displays and OS prompts shouldn't mix.",
-
-    "https://go.theregister.com/feed/www.theregister.com/2026/04/06/who_me/":
-        "A reader-contributed \"Who, Me?\" confession about a developer whose cold-weather arrival triggered a thermal event that melted a mainframe—one of The Register's trademark Monday-morning cautionary tales.",
-
-    "https://go.theregister.com/feed/www.theregister.com/2026/04/06/anthropic_code_leak_kettle_podcast/":
-        "The Register's Kettle podcast dissects the reputational and IPO-related fallout from Anthropic's accidental release of Claude Code's source code, examining what it means for the company's public positioning.",
-
-    # Product
-    "https://www.lennysnewsletter.com/p/anthropics-1b-to-19b-growth-run":
-        "Amol Avasare joins Lenny's Podcast to detail how Anthropic scaled Claude from a $1B to $19B valuation, covering the product strategy and go-to-market decisions that made it the fastest-growing AI product ever.",
-}
-
-# ── Category colour palette ────────────────────────────────────────────────
-CAT_COLORS = {
-    "Leadership":        "#4a90d9",
-    "Politics":          "#d94a4a",
-    "Agile":             "#e8a838",
-    "Engineering":       "#4ab56e",
-    "Engineering Blogs": "#7b61d9",
-    "AI & ML Blogs":     "#d94ab5",
-    "Top Tech Blogs":    "#29b8cc",
-    "Product":           "#88b840",
-}
-DEFAULT_COLORS = ["#4a90d9","#d94a4a","#e8a838","#4ab56e","#7b61d9","#d94ab5","#29b8cc","#88b840"]
-
-def cat_color(cat, idx):
-    return CAT_COLORS.get(cat, DEFAULT_COLORS[idx % len(DEFAULT_COLORS)])
-
-def safe(t):
-    return html.escape(str(t) if t else "")
-
-def slug(cat):
-    return re.sub(r'[^a-z0-9]+', '-', cat.lower()).strip('-')
-
-# ── Deduplicate by link (keep first occurrence) ───────────────────────────
-seen_links = set()
-deduped_cats = {}
-for cat, items in cats.items():
-    unique = []
-    for item in items:
-        lnk = item.get("link","")
-        if lnk not in seen_links:
-            seen_links.add(lnk)
-            unique.append(item)
-    if unique:
-        deduped_cats[cat] = unique
-
-total_items = sum(len(v) for v in deduped_cats.values())
-n_cats = len(deduped_cats)
-n_feeds = stats["feeds_fetched"]
-n_errors = stats["feeds_errored"]
-digest_extracted = stats["digest_articles_extracted"]
-
-# ── Build HTML ─────────────────────────────────────────────────────────────
-parts = []
-
-parts.append(f"""<!DOCTYPE html>
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Feed Digest: {DATE}</title>
-<style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#1a1a2e;line-height:1.6}}
-  .wrap{{max-width:720px;margin:0 auto;padding:16px}}
-  /* Header */
-  .header{{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#fff;border-radius:12px;padding:32px 28px 24px;margin-bottom:20px}}
-  .header h1{{font-size:1.6rem;font-weight:700;letter-spacing:-.5px}}
-  .header .date{{font-size:1rem;opacity:.75;margin-top:4px}}
-  .stats{{display:flex;gap:20px;margin-top:18px;flex-wrap:wrap}}
-  .stat{{background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;text-align:center}}
-  .stat-val{{font-size:1.4rem;font-weight:700}}
-  .stat-lbl{{font-size:.72rem;opacity:.8;text-transform:uppercase;letter-spacing:.5px}}
-  /* TOC */
-  .toc{{background:#fff;border-radius:12px;padding:20px 22px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.07)}}
-  .toc h2{{font-size:.8rem;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:12px}}
-  .toc-pills{{display:flex;flex-wrap:wrap;gap:8px}}
-  .toc-pill{{display:inline-block;padding:5px 14px;border-radius:20px;font-size:.82rem;font-weight:600;color:#fff;text-decoration:none;opacity:.92;transition:opacity .15s}}
-  .toc-pill:hover{{opacity:1}}
-  /* Category cards */
-  .cat-card{{background:#fff;border-radius:12px;padding:22px 22px 16px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-left:4px solid #ccc}}
-  .cat-title{{font-size:1.05rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}}
-  .cat-count{{font-size:.75rem;font-weight:500;background:#f0f2f5;border-radius:12px;padding:2px 9px;color:#666}}
-  /* Items */
-  .item{{padding:12px 0;border-bottom:1px solid #f0f2f5}}
-  .item:last-child{{border-bottom:none;padding-bottom:0}}
-  .item-title{{font-weight:700;font-size:.95rem;margin-bottom:2px}}
-  .item-title a{{color:#1a1a2e;text-decoration:none}}
-  .item-title a:hover{{text-decoration:underline}}
-  .item-meta{{font-size:.78rem;color:#999;margin-bottom:5px}}
-  .item-summary{{font-size:.87rem;color:#444;line-height:1.55}}
-  .overflow-note{{font-size:.8rem;color:#888;font-style:italic;margin-top:10px;padding-top:8px;border-top:1px dashed #e0e0e0}}
-  /* Footer */
-  .footer{{background:#fff;border-radius:12px;padding:18px 22px;margin-top:8px;box-shadow:0 1px 3px rgba(0,0,0,.07);font-size:.83rem;color:#666;text-align:center}}
-  .footer strong{{color:#444}}
-</style>
+<title>Feed Digest: {escape(display_date)}</title>
 </head>
-<body>
-<div class="wrap">
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#f0f2f5;color:#222;font-size:15px;line-height:1.6;margin:0;padding:0;">
+<div style="max-width:720px;margin:0 auto;padding:0 16px 48px;">
 
-<div class="header">
-  <div class="date">Daily Digest</div>
-  <h1>{DATE}</h1>
-  <div class="stats">
-    <div class="stat"><div class="stat-val">{total_items}</div><div class="stat-lbl">Articles</div></div>
-    <div class="stat"><div class="stat-val">{n_feeds}</div><div class="stat-lbl">Feeds checked</div></div>
-    <div class="stat"><div class="stat-val">{n_cats}</div><div class="stat-lbl">Categories</div></div>
-    <div class="stat"><div class="stat-val">{digest_extracted}</div><div class="stat-lbl">Digest links extracted</div></div>
+  <!-- Header -->
+  <div style="background-color:#1a1a2e;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#fff;padding:36px 24px 28px;margin-bottom:24px;border-radius:0 0 8px 8px;">
+    <div style="font-size:26px;font-weight:700;letter-spacing:-0.5px;">Feed Digest</div>
+    <div style="font-size:15px;opacity:0.7;margin-top:4px;">{escape(display_date)}</div>
+    <div style="display:flex;gap:24px;margin-top:16px;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#60a5fa;">{total_items}</div>
+        <div style="font-size:11px;opacity:0.7;text-transform:uppercase;letter-spacing:0.5px;">Items</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#34d399;">{stats['feeds_fetched']}</div>
+        <div style="font-size:11px;opacity:0.7;text-transform:uppercase;letter-spacing:0.5px;">Feeds</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#f472b6;">{cat_count}</div>
+        <div style="font-size:11px;opacity:0.7;text-transform:uppercase;letter-spacing:0.5px;">Categories</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#fbbf24;">{stats['total_feeds']}</div>
+        <div style="font-size:11px;opacity:0.7;text-transform:uppercase;letter-spacing:0.5px;">Checked</div>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="toc">
-  <h2>Contents</h2>
-  <div class="toc-pills">
-""")
-
-for idx, cat in enumerate(deduped_cats.keys()):
-    color = cat_color(cat, idx)
-    parts.append(f'    <a class="toc-pill" href="#{slug(cat)}" style="background:{color}">{safe(cat)} ({len(deduped_cats[cat])})</a>\n')
-
-parts.append("  </div>\n</div>\n\n")
-
-# Category sections
-for idx, (cat, items) in enumerate(deduped_cats.items()):
-    color = cat_color(cat, idx)
-    overflow_n = len(overflow.get(cat, []))
-    parts.append(f'<div class="cat-card" id="{slug(cat)}" style="border-left-color:{color}">\n')
-    parts.append(f'  <div class="cat-title" style="color:{color}">{safe(cat)} <span class="cat-count">{len(items)} items</span></div>\n')
-
-    for item in items:
-        link = item.get("link","")
-        title = item.get("title","(no title)")
-        feed = item.get("feed_name","")
-        summary = SUMMARIES.get(link, "")
-        if not summary:
-            summary = f"Article from {safe(feed)} covering {safe(title.lower())}."
-
-        parts.append(f"""  <div class="item">
-    <div class="item-title"><a href="{safe(link)}" target="_blank" rel="noopener">{safe(title)}</a></div>
-    <div class="item-meta">{safe(feed)}</div>
-    <div class="item-summary">{safe(summary)}</div>
+  <!-- TOC -->
+  <div style="background:#fff;border-radius:8px;padding:16px 20px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+    <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;margin-bottom:10px;font-weight:600;">Categories</div>
+    <div>{toc_pills}</div>
   </div>
-""")
 
-    if overflow_n:
-        parts.append(f'  <div class="overflow-note">+{overflow_n} more items not shown (cap reached)</div>\n')
+  <!-- Sections -->
+  {sections_html}
 
-    parts.append('</div>\n\n')
-
-# Footer
-parts.append(f"""<div class="footer">
-  <strong>{n_feeds}</strong> feeds checked &nbsp;·&nbsp; <strong>{n_errors}</strong> unreachable &nbsp;·&nbsp; Generated {DATE}
-</div>
+  <!-- Footer -->
+  <div style="text-align:center;font-size:12px;color:#aaa;padding:16px 0;">
+    {feeds_checked} feeds checked &bull; {feeds_errored} unreachable &bull; generated {escape(generated_at)}
+  </div>
 
 </div>
 </body>
-</html>
-""")
+</html>"""
 
-html_content = "".join(parts)
-out = f"{DATE}.html"
-with open(out, "w") as f:
-    f.write(html_content)
 
-print(f"Written {out} ({len(html_content):,} bytes, {total_items} items, {n_cats} categories)")
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Build daily digest HTML from JSON feed data with AI-generated summaries."
+    )
+    parser.add_argument(
+        "--input", required=True,
+        help="Path to the input JSON file (e.g. 2026-04-07.json)"
+    )
+    parser.add_argument(
+        "--output", default=None,
+        help="Path for the output HTML file. Default: same directory/basename as input with .html extension"
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    input_path = Path(args.input)
+    if not input_path.exists():
+        print(f"Error: input file not found: {input_path}", file=sys.stderr)
+        sys.exit(1)
+
+    output_path = Path(args.output) if args.output else input_path.with_suffix(".html")
+
+    with open(input_path) as f:
+        data = json.load(f)
+
+    # Format display date from generated_at
+    generated_at = data.get("generated_at", "")
+    display_date = format_date(generated_at)
+
+    # Set up Anthropic client
+    token_file = "/home/claude/.claude/remote/.session_ingress_token"
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key and os.path.exists(token_file):
+        api_key = Path(token_file).read_text().strip()
+
+    use_api = bool(api_key)
+    client = None
+    if use_api:
+        os.environ["ANTHROPIC_API_KEY"] = api_key
+        client = anthropic.Anthropic()
+        # Quick connectivity test
+        try:
+            client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=5,
+                messages=[{"role": "user", "content": "ping"}]
+            )
+            print("Claude API: connected")
+        except Exception as e:
+            print(f"Claude API unavailable ({e}), using excerpt fallback")
+            use_api = False
+            client = None
+
+    summaries_by_category = {}
+    total_summarized = 0
+
+    for cat, items in data["categories"].items():
+        summaries_by_category[cat] = {}
+        for item in items:
+            title = item["title"]
+            excerpt = item.get("excerpt", "")
+            if use_api:
+                try:
+                    summary = get_summary(client, title, excerpt)
+                except Exception as e:
+                    print(f"  Summary error for '{title[:50]}': {e}")
+                    summary = excerpt[:220].rstrip() + ("\u2026" if len(excerpt) > 220 else "")
+            else:
+                summary = excerpt[:220].rstrip() + ("\u2026" if len(excerpt) > 220 else "")
+            summaries_by_category[cat][title] = summary
+            total_summarized += 1
+            print(f"  [{cat}] {title[:70]}")
+
+    print(f"\nSummarized {total_summarized} items across {len(data['categories'])} categories.")
+
+    html = build_html(data, summaries_by_category, display_date)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"HTML written: {output_path} ({len(html):,} bytes)")
+    return total_summarized, len(data["categories"])
+
+
+if __name__ == "__main__":
+    total, cats = main()
+    print(f"\nDone: {total} items, {cats} categories")

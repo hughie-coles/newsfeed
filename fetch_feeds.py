@@ -16,6 +16,34 @@ from urllib.parse import urlparse
 import feedparser
 
 
+def resolve_entry_link(entry, feed_url):
+    """Prefer the alternate HTML link from entry.links over entry.link.
+
+    Returns "" if the resolved link matches the feed URL itself.
+    """
+    best = ""
+    alt_no_type = ""
+    for link_obj in entry.get("links", []):
+        if link_obj.get("rel") == "alternate":
+            ltype = link_obj.get("type", "")
+            if "html" in ltype:
+                best = link_obj.get("href", "")
+                break
+            elif not ltype and not alt_no_type:
+                alt_no_type = link_obj.get("href", "")
+    if not best:
+        best = alt_no_type or entry.get("link", "")
+    # Skip if the resolved link is really just the feed URL
+    if best:
+        parsed_best = urlparse(best)
+        parsed_feed = urlparse(feed_url)
+        clean_best = f"{parsed_best.scheme}://{parsed_best.netloc}{parsed_best.path}".rstrip("/")
+        clean_feed = f"{parsed_feed.scheme}://{parsed_feed.netloc}{parsed_feed.path}".rstrip("/")
+        if clean_best == clean_feed:
+            return ""
+    return best
+
+
 def parse_opml(opml_path):
     """Parse OPML file, return list of {url, name, category} dicts."""
     tree = ET.parse(opml_path)
@@ -82,15 +110,28 @@ def parse_date(entry):
 
 
 class LinkExtractor(HTMLParser):
-    """Extract <a> tags from HTML content."""
+    """Extract <a> tags from HTML content with surrounding block context."""
+
+    BLOCK_TAGS = {"p", "li", "div", "td", "th", "blockquote", "dd", "dt", "h1",
+                  "h2", "h3", "h4", "h5", "h6", "article", "section"}
 
     def __init__(self):
         super().__init__()
         self.links = []
         self._current_href = None
         self._current_text = []
+        self._block_text = []
+        self._block_links = []
+        self._in_block = 0
 
     def handle_starttag(self, tag, attrs):
+        if tag in self.BLOCK_TAGS:
+            # Innermost block wins: reset context on each new block open.
+            # This means nested blocks discard outer context, which is fine
+            # for the flat structure of digest HTML (sibling <p>/<li> tags).
+            self._in_block += 1
+            self._block_text = []
+            self._block_links = []
         if tag == "a":
             attrs_dict = dict(attrs)
             href = attrs_dict.get("href", "")
@@ -101,14 +142,27 @@ class LinkExtractor(HTMLParser):
     def handle_data(self, data):
         if self._current_href is not None:
             self._current_text.append(data)
+        if self._in_block > 0:
+            self._block_text.append(data)
 
     def handle_endtag(self, tag):
         if tag == "a" and self._current_href:
             text = " ".join("".join(self._current_text).split()).strip()
             if text and len(text) > 3:
-                self.links.append({"title": text, "link": self._current_href})
+                link_entry = {"title": text, "link": self._current_href}
+                self.links.append(link_entry)
+                if self._in_block > 0:
+                    self._block_links.append(link_entry)
             self._current_href = None
             self._current_text = []
+        if tag in self.BLOCK_TAGS and self._in_block > 0:
+            context = " ".join("".join(self._block_text).split()).strip()
+            if context:
+                for link_entry in self._block_links:
+                    link_entry["context"] = context
+            self._block_links = []
+            self._block_text = []
+            self._in_block -= 1
 
 
 NOISE_DOMAINS = {
@@ -154,7 +208,11 @@ def extract_digest_links(html_content, digest_url):
         if url in seen:
             continue
         seen.add(url)
-        results.append(link)
+        results.append({
+            "title": link["title"],
+            "link": link["link"],
+            "context": link.get("context", "")[:300],
+        })
     return results
 
 
@@ -190,8 +248,8 @@ def process_digests(categories, feeds):
             new_item = {
                 "title": link["title"],
                 "link": link["link"],
-                "published": source_item["published"],
-                "excerpt": "",
+                "published": None,
+                "excerpt": link.get("context", ""),
                 "feed_name": source_item["feed_name"],
                 "category": category,
             }
@@ -210,6 +268,78 @@ def process_digests(categories, feeds):
     return extracted_count
 
 
+def _title_words(title):
+    """Normalize title to a set of significant words (>3 chars)."""
+    words = re.sub(r"[^\w\s]", "", title.lower()).split()
+    return {w for w in words if len(w) > 3}
+
+
+TITLE_SIMILARITY_THRESHOLD = 0.6
+
+
+def _titles_similar(words_a, words_b, threshold=TITLE_SIMILARITY_THRESHOLD):
+    """Return True if two title word-sets share >= threshold of their words."""
+    if not words_a or not words_b:
+        return False
+    union = len(words_a | words_b)
+    if union == 0:
+        return False
+    return len(words_a & words_b) / union >= threshold
+
+
+def deduplicate_by_title(categories):
+    """Remove near-duplicate articles by title similarity.
+
+    Within each category: keep the article with the longer excerpt.
+    Across categories: keep the article in the category where it appeared first
+    (OPML-sourced categories come before Daily-extracted ones).
+    """
+    # Within-category dedup
+    for cat, items in list(categories.items()):
+        word_sets = [_title_words(item["title"]) for item in items]
+        remove = set()
+        for i in range(len(items)):
+            if i in remove:
+                continue
+            for j in range(i + 1, len(items)):
+                if j in remove:
+                    continue
+                if _titles_similar(word_sets[i], word_sets[j]):
+                    # Keep the one with longer excerpt
+                    if len(items[i].get("excerpt", "")) >= len(items[j].get("excerpt", "")):
+                        remove.add(j)
+                    else:
+                        remove.add(i)
+                        break  # i is removed, stop comparing from i
+        if remove:
+            categories[cat] = [item for idx, item in enumerate(items) if idx not in remove]
+
+    # Cross-category dedup: flatten with category order, first appearance wins
+    seen = []  # list of (word_set, cat, idx)
+    removals = {}  # {cat: set of indices to remove}
+    for cat, items in categories.items():
+        for idx, item in enumerate(items):
+            ws = _title_words(item["title"])
+            if not ws:
+                continue
+            duplicate = False
+            for seen_ws, seen_cat, _seen_idx in seen:
+                if _titles_similar(ws, seen_ws):
+                    duplicate = True
+                    break
+            if duplicate:
+                removals.setdefault(cat, set()).add(idx)
+            else:
+                seen.append((ws, cat, idx))
+
+    for cat, indices in removals.items():
+        categories[cat] = [item for idx, item in enumerate(categories[cat]) if idx not in indices]
+
+    # Remove empty categories
+    for cat in [c for c, items in categories.items() if not items]:
+        del categories[cat]
+
+
 def fetch_single_feed(feed, cutoff):
     """Fetch one feed, return (items_list, error_dict_or_None)."""
     url = feed["url"]
@@ -222,6 +352,7 @@ def fetch_single_feed(feed, cutoff):
             return [], {"feed": name, "url": url, "error": str(d.bozo_exception)}
 
         items = []
+        skipped_feed_links = 0
         for entry in d.entries:
             pub_dt = parse_date(entry)
             if not pub_dt or pub_dt < cutoff:
@@ -234,9 +365,14 @@ def fetch_single_feed(feed, cutoff):
             raw_summary = content_html or entry.get("summary") or entry.get("description") or ""
             excerpt = strip_html(raw_summary)[:500]
 
+            article_link = resolve_entry_link(entry, url)
+            if not article_link:
+                skipped_feed_links += 1
+                continue
+
             item = {
                 "title": entry.get("title", "Untitled"),
-                "link": entry.get("link", ""),
+                "link": article_link,
                 "published": pub_dt.isoformat() if pub_dt else None,
                 "excerpt": excerpt,
                 "feed_name": name,
@@ -246,6 +382,8 @@ def fetch_single_feed(feed, cutoff):
                 item["_content_html"] = content_html
             items.append(item)
 
+        if skipped_feed_links:
+            print(f"  {name}: skipped {skipped_feed_links} entries (link matched feed URL)", file=sys.stderr)
         return items, None
 
     except Exception as e:
@@ -305,6 +443,13 @@ def main():
         print("Extracting links from Daily digest articles...", file=sys.stderr)
         digest_extracted = process_digests(categories, feeds)
         print(f"  Extracted {digest_extracted} articles from digests", file=sys.stderr)
+
+    # Deduplicate near-identical titles within and across categories
+    pre_dedup = sum(len(v) for v in categories.values())
+    deduplicate_by_title(categories)
+    post_dedup = sum(len(v) for v in categories.values())
+    if pre_dedup != post_dedup:
+        print(f"  Deduplication removed {pre_dedup - post_dedup} articles", file=sys.stderr)
 
     # Sort items within each category by date (newest first), undated at the end
     for cat in categories:
