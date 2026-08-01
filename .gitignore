@@ -2,3 +2,5 @@
 *.json
 *.html
 __pycache__/
+.claude/
+.worktree-gate-off
