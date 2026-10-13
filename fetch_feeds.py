@@ -394,8 +394,8 @@ def main():
     parser = argparse.ArgumentParser(description="Fetch RSS feeds from OPML")
     parser.add_argument("--opml", default=str(Path(__file__).parent / "feeds.opml"),
                         help="Path to OPML file")
-    parser.add_argument("--hours", type=int, default=24,
-                        help="Look back N hours (default: 24)")
+    parser.add_argument("--hours", type=int, default=168,
+                        help="Look back N hours (default: 168, one week)")
     parser.add_argument("--max-per-category", type=int, default=25,
                         help="Max items per category (default: 25, 0=unlimited)")
     parser.add_argument("--no-extract-digests", action="store_true",

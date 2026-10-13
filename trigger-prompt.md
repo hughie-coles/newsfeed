@@ -1,6 +1,6 @@
-# Daily Feed Digest — CCR Trigger Prompt
+# Weekly Feed Digest — CCR Trigger Prompt
 
-Run the daily RSS feed digest pipeline and create a Gmail draft with the results.
+Run the weekly RSS feed digest pipeline and create a Gmail draft with the results.
 
 ## Steps
 
